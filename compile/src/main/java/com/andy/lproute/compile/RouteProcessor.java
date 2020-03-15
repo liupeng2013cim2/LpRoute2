@@ -1,6 +1,7 @@
 package com.andy.lproute.compile;
 
 import com.andy.lproute.annotation.Route;
+import com.andy.lproute.base.Constants;
 import com.andy.lproute.bean.ComponentInfo;
 import com.andy.lproute.interfaces.IGroup;
 import com.google.auto.service.AutoService;
@@ -17,6 +18,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import javax.annotation.processing.AbstractProcessor;
@@ -120,7 +122,7 @@ public class RouteProcessor extends AbstractProcessor {
         Collection<TypeSpec.Builder> typeSpecs = mTypeMap.values();
         for (TypeSpec.Builder typeSpec : typeSpecs) {
             println(typeSpec.toString());
-            JavaFile javaFile = JavaFile.builder("com.andy.route.compile", typeSpec.build())
+            JavaFile javaFile = JavaFile.builder(Constants.PACKAGE_COMPILE, typeSpec.build())
                     .build();
             try {
                 javaFile.writeTo(mProcessingEnvironment.getFiler());
@@ -146,7 +148,7 @@ public class RouteProcessor extends AbstractProcessor {
         println("group:" + group);
         TypeSpec.Builder typeSpec = mTypeMap.get(group);
         if (typeSpec == null) {
-            String className = "Route$$Group$$" + group;
+            String className = Constants.GROUP_PREFIX + group;
             println("group:" + group + ", class:" + className);
             ClassName superInterface = ClassName.get(getPackageName(IGroup.class),
                     IGroup.class.getSimpleName());
@@ -169,7 +171,7 @@ public class RouteProcessor extends AbstractProcessor {
             ParameterSpec parameterSpec = ParameterSpec.builder(parameterizedTypeName, "map")
                     .build();
             CodeBlock codeBlock = CodeBlock.builder()
-                    .addStatement("map.put($S, new $N($S, $S));",
+                    .addStatement("map.put($S, new $N($S, $N.class));",
                             route.path(),
                             componentInfoClassName.simpleName(),
                             route.path(),
@@ -191,7 +193,7 @@ public class RouteProcessor extends AbstractProcessor {
         } else {
             println("map exsit");
             CodeBlock codeBlock = CodeBlock.builder()
-                    .addStatement("map.put($S, new $N($S, $S));",
+                    .addStatement("map.put($S, new $N($S, $N.class));",
                             route.path(),
                             ComponentInfo.class.getSimpleName(),
                             route.path(),

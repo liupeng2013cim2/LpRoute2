@@ -8,11 +8,11 @@ package com.andy.lproute.bean;
  */
 public class ComponentInfo {
     private String mPath;
-    private String mClassName;
+    private Class mClass;
 
-    public ComponentInfo(String path, String className) {
+    public ComponentInfo(String path, Class cls) {
         mPath = path;
-        mClassName = className;
+        mClass = cls;
     }
 
 }

@@ -15,6 +15,6 @@ public class DemoApplication extends Application {
     @Override
     public void onCreate() {
         super.onCreate();
-        RouteManager.getInstance();
+        RouteManager.getInstance().init(this);
     }
 }
