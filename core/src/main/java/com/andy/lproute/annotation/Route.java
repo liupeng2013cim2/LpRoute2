@@ -7,7 +7,7 @@ import java.lang.annotation.Target;
 
 /**
  * @ClassName: Route
- * @Description: 表示目标组件对应的路由信息，包含path,name等
+ * @Description:
  * @Author: andy
  * @Date: 2020/3/14 9:29
  */

@@ -1,2 +1,2 @@
-include ':app', ':annotation', ':compile'
+include ':app', ':core', ':compile', ':routelib'
 rootProject.name='LpRoute'
