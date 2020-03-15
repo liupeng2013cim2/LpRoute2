@@ -1,13 +1,18 @@
 package com.andy.routelib;
 
+import android.app.Activity;
 import android.app.Application;
+import android.content.ComponentName;
 import android.content.Context;
+import android.content.Intent;
 import android.content.pm.ApplicationInfo;
+import android.text.TextUtils;
 import android.util.Log;
 
 import com.andy.lproute.base.Constants;
 import com.andy.lproute.bean.ComponentInfo;
 import com.andy.lproute.interfaces.IGroup;
+import com.andy.lproute.util.RouteUtils;
 
 import java.io.IOException;
 import java.util.Enumeration;
@@ -33,7 +38,6 @@ public class RouteManager {
     private Context mApplicationContext;
 
 
-
     private static class Holder {
         static RouteManager instance = new RouteManager();
     }
@@ -42,7 +46,8 @@ public class RouteManager {
         return Holder.instance;
     }
 
-    private RouteManager() {}
+    private RouteManager() {
+    }
 
     public void init(Application application) {
         checkInit();
@@ -73,7 +78,7 @@ public class RouteManager {
 
         try {
             DexFile dexFile = new DexFile(applicationInfo.sourceDir);
-            Enumeration<String> enumeration =dexFile.entries();
+            Enumeration<String> enumeration = dexFile.entries();
             String className = null;
             String groupPrefix = Constants.PACKAGE_COMPILE + "." + Constants.GROUP_PREFIX;
             while (enumeration.hasMoreElements()) {
@@ -98,13 +103,30 @@ public class RouteManager {
     }
 
     public Navigator.Builder path(String path) {
-        checkNotInit();
-
-        return new Navigator().new Builder(mApplicationContext, sComponentMap.get(path));
+        return new Navigator().new Builder(mApplicationContext, path, sComponentMap.get(path));
     }
 
+    public Navigator.Builder path(String path, Navigator.NavigateCallback callback) {
 
+        return new Navigator().new Builder(mApplicationContext, path, sComponentMap.get(path)).callback(callback);
+    }
 
+    public ComponentInfo getComponent(String path) {
+        return sComponentMap.get(path);
+    }
+
+    public int startActivityForResult(Activity context, String path, Intent intent, int requestCode) {
+        ComponentInfo componentInfo = sComponentMap.get(path);
+        if (componentInfo == null) {
+            return -1;
+        }
+        Class componentCls = componentInfo.getComponent();
+        ComponentName componentName = new ComponentName(RouteUtils.getPackageName(componentCls), componentCls.getSimpleName()
+        );
+        intent.setComponent(componentName);
+        context.startActivityForResult(intent, requestCode);
+        return 1;
+    }
 
 
 }

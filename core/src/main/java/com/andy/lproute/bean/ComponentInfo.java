@@ -22,4 +22,12 @@ public class ComponentInfo {
     public Class getComponent() {
         return mClass;
     }
+
+    @Override
+    public String toString() {
+        return "ComponentInfo{" +
+                "mPath='" + mPath + '\'' +
+                ", mClass=" + mClass +
+                '}';
+    }
 }

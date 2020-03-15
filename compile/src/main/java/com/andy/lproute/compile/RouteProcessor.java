@@ -4,6 +4,7 @@ import com.andy.lproute.annotation.Route;
 import com.andy.lproute.base.Constants;
 import com.andy.lproute.bean.ComponentInfo;
 import com.andy.lproute.interfaces.IGroup;
+import com.andy.lproute.util.RouteUtils;
 import com.google.auto.service.AutoService;
 import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.CodeBlock;
@@ -151,17 +152,17 @@ public class RouteProcessor extends AbstractProcessor {
         if (typeSpec == null) {
             String className = Constants.GROUP_PREFIX + group;
             println("group:" + group + ", class:" + className);
-            ClassName superInterface = ClassName.get(getPackageName(IGroup.class),
+            ClassName superInterface = ClassName.get(RouteUtils.getPackageName(IGroup.class),
                     IGroup.class.getSimpleName());
             printClassName(superInterface);
-            ClassName hashMapClassName = ClassName.get(getPackageName(Map.class),
+            ClassName hashMapClassName = ClassName.get(RouteUtils.getPackageName(Map.class),
                     Map.class.getSimpleName());
             printClassName(hashMapClassName);
-            ClassName stringClassName = ClassName.get(getPackageName(String.class),
+            ClassName stringClassName = ClassName.get(RouteUtils.getPackageName(String.class),
                     String.class.getSimpleName()
             );
             printClassName(stringClassName);
-            ClassName componentInfoClassName = ClassName.get(getPackageName(ComponentInfo.class),
+            ClassName componentInfoClassName = ClassName.get(RouteUtils.getPackageName(ComponentInfo.class),
                     ComponentInfo.class.getSimpleName()
             );
             printClassName(componentInfoClassName);
@@ -232,10 +233,6 @@ public class RouteProcessor extends AbstractProcessor {
         return route.path().split("/")[1];
     }
 
-    private String getPackageName(Class cls) {
-        int lastDotIndex = cls.getName().lastIndexOf(".");
-        return cls.getName().substring(0, lastDotIndex);
-    }
 
 
     private void printClassName(ClassName className) {
