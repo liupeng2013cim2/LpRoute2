@@ -15,4 +15,11 @@ public class ComponentInfo {
         mClass = cls;
     }
 
+    public String getPath() {
+        return mPath;
+    }
+
+    public Class getComponent() {
+        return mClass;
+    }
 }

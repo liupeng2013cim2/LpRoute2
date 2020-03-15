@@ -5,8 +5,14 @@ import android.content.Context;
 import android.content.pm.ApplicationInfo;
 import android.util.Log;
 
+import com.andy.lproute.base.Constants;
+import com.andy.lproute.bean.ComponentInfo;
+import com.andy.lproute.interfaces.IGroup;
+
 import java.io.IOException;
 import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.Map;
 
 import dalvik.system.DexFile;
 
@@ -20,7 +26,13 @@ public class RouteManager {
 
     private static final String TAG = RouteManager.class.getSimpleName();
 
-    private static Context mApplicationContext;
+    private static final int INIT_CAPACITY = 10;
+
+    private Map<String, ComponentInfo> sComponentMap = new HashMap(INIT_CAPACITY);
+
+    private Context mApplicationContext;
+
+
 
     private static class Holder {
         static RouteManager instance = new RouteManager();
@@ -63,15 +75,32 @@ public class RouteManager {
             DexFile dexFile = new DexFile(applicationInfo.sourceDir);
             Enumeration<String> enumeration =dexFile.entries();
             String className = null;
+            String groupPrefix = Constants.PACKAGE_COMPILE + "." + Constants.GROUP_PREFIX;
             while (enumeration.hasMoreElements()) {
                 className = enumeration.nextElement();
                 Log.e(TAG, "className:" + className);
+                try {
+                    if (className.startsWith(groupPrefix)) {
+                        Log.e(TAG, "className group:" + className);
+                        ((IGroup) (Class.forName(className).newInstance())).loadInfo(sComponentMap);
+                    }
+                } catch (ClassNotFoundException e) {
+
+                } catch (InstantiationException | IllegalAccessException e) {
+
+                }
 
             }
         } catch (IOException e) {
             e.printStackTrace();
         }
 
+    }
+
+    public Navigator.Builder path(String path) {
+        checkNotInit();
+
+        return new Navigator().new Builder(mApplicationContext, sComponentMap.get(path));
     }
 
 

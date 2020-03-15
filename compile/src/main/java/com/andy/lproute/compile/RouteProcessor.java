@@ -16,6 +16,7 @@ import com.squareup.javapoet.TypeSpec;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -47,7 +48,7 @@ import javax.lang.model.type.TypeMirror;
 @AutoService(Processor.class)
 public class RouteProcessor extends AbstractProcessor {
     private static final int INIT_CAPACITY = 10;
-    private HashMap<String, TypeSpec.Builder> mTypeMap = new HashMap(INIT_CAPACITY);
+    private Map<String, TypeSpec.Builder> mTypeMap = new HashMap(INIT_CAPACITY);
     private ProcessingEnvironment mProcessingEnvironment;
 
     public RouteProcessor() {
@@ -153,8 +154,8 @@ public class RouteProcessor extends AbstractProcessor {
             ClassName superInterface = ClassName.get(getPackageName(IGroup.class),
                     IGroup.class.getSimpleName());
             printClassName(superInterface);
-            ClassName hashMapClassName = ClassName.get(getPackageName(HashMap.class),
-                    HashMap.class.getSimpleName());
+            ClassName hashMapClassName = ClassName.get(getPackageName(Map.class),
+                    Map.class.getSimpleName());
             printClassName(hashMapClassName);
             ClassName stringClassName = ClassName.get(getPackageName(String.class),
                     String.class.getSimpleName()

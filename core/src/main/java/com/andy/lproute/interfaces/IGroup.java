@@ -3,6 +3,7 @@ package com.andy.lproute.interfaces;
 import com.andy.lproute.bean.ComponentInfo;
 
 import java.util.HashMap;
+import java.util.Map;
 
 /**
  * @ClassName: IGroup
@@ -11,5 +12,5 @@ import java.util.HashMap;
  * @Date: 2020/3/15 10:08
  */
 public interface IGroup {
-    void loadInfo(HashMap<String, ComponentInfo> map);
+    void loadInfo(Map<String, ComponentInfo> map);
 }
