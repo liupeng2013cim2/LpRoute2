@@ -31,7 +31,7 @@ public class MainActivity extends AppCompatActivity {
         findViewById(R.id.start_btn).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                RouteManager.getInstance().path("/andy/test1")
+                RouteManager.getInstance().path("/andy/test")
                         .callback(new Navigator.NavigateCallback() {
                             @Override
                             public void onStart() {

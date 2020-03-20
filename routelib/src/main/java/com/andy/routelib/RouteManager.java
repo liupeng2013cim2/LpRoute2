@@ -6,12 +6,13 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ApplicationInfo;
-import android.text.TextUtils;
 import android.util.Log;
 
 import com.andy.lproute.base.Constants;
 import com.andy.lproute.bean.ComponentInfo;
-import com.andy.lproute.interfaces.IGroup;
+import com.andy.lproute.bean.InterceptorInfo;
+import com.andy.lproute.provider.IGroup;
+import com.andy.lproute.provider.IInterceptorInfo;
 import com.andy.lproute.util.RouteUtils;
 
 import java.io.IOException;
@@ -34,6 +35,7 @@ public class RouteManager {
     private static final int INIT_CAPACITY = 10;
 
     private Map<String, ComponentInfo> sComponentMap = new HashMap(INIT_CAPACITY);
+    private Map<String, InterceptorInfo> sInterceptorMap = new HashMap(INIT_CAPACITY);
 
     private Context mApplicationContext;
 
@@ -88,6 +90,8 @@ public class RouteManager {
                     if (className.startsWith(groupPrefix)) {
                         Log.e(TAG, "className group:" + className);
                         ((IGroup) (Class.forName(className).newInstance())).loadInfo(sComponentMap);
+                    } else if (className.equals(Constants.CLASS_INTERCEPTOR)) {
+                        ((IInterceptorInfo)(Class.forName(className).newInstance())).loadInfo(sInterceptorMap);
                     }
                 } catch (ClassNotFoundException e) {
 
@@ -109,6 +113,10 @@ public class RouteManager {
     public Navigator.Builder path(String path, Navigator.NavigateCallback callback) {
 
         return new Navigator().new Builder(mApplicationContext, path, sComponentMap.get(path)).callback(callback);
+    }
+
+    public Map<String, InterceptorInfo> getInterceptors() {
+        return sInterceptorMap;
     }
 
     public ComponentInfo getComponent(String path) {

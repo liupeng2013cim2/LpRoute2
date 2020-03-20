@@ -9,4 +9,5 @@ package com.andy.lproute.base;
 public class Constants {
     public static final String GROUP_PREFIX = "Route$$Group$$";
     public static final String PACKAGE_COMPILE = "com.andy.route.compile";
+    public static final String CLASS_INTERCEPTOR = "InterceptorHolder";
 }

@@ -1,8 +1,7 @@
-package com.andy.lproute.interfaces;
+package com.andy.lproute.provider;
 
 import com.andy.lproute.bean.ComponentInfo;
 
-import java.util.HashMap;
 import java.util.Map;
 
 /**

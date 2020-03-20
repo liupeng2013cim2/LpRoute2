@@ -1,9 +1,12 @@
 package com.andy.lproute.compile;
 
+import com.andy.lproute.annotation.Interceptor;
 import com.andy.lproute.annotation.Route;
 import com.andy.lproute.base.Constants;
 import com.andy.lproute.bean.ComponentInfo;
-import com.andy.lproute.interfaces.IGroup;
+import com.andy.lproute.bean.InterceptorInfo;
+import com.andy.lproute.provider.IGroup;
+import com.andy.lproute.provider.IInterceptorInfo;
 import com.andy.lproute.util.RouteUtils;
 import com.google.auto.service.AutoService;
 import com.squareup.javapoet.ClassName;
@@ -20,7 +23,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import javax.annotation.processing.AbstractProcessor;
@@ -51,6 +53,7 @@ public class RouteProcessor extends AbstractProcessor {
     private static final int INIT_CAPACITY = 10;
     private Map<String, TypeSpec.Builder> mTypeMap = new HashMap(INIT_CAPACITY);
     private ProcessingEnvironment mProcessingEnvironment;
+    private TypeSpec.Builder mInterceptorTypeSpecBuilder;
 
     public RouteProcessor() {
     }
@@ -67,6 +70,7 @@ public class RouteProcessor extends AbstractProcessor {
         println("getSupportedAnnotationTypes");
         Set<String> set = new HashSet(3);
         set.add(Route.class.getCanonicalName());
+        set.add(Interceptor.class.getCanonicalName());
         return set;
     }
 
@@ -102,9 +106,31 @@ public class RouteProcessor extends AbstractProcessor {
             println("element:" + element);
             if (element.toString().equals(Route.class.getCanonicalName())) {
                 doRoute(roundEnvironment);
+            } else if (element.toString().equals(Interceptor.class.getCanonicalName())) {
+                doInterceptor(roundEnvironment);
             }
         }
         return false;
+    }
+
+    private void doInterceptor(RoundEnvironment roundEnvironment) {
+        Set<Element> elements = (Set<Element>) roundEnvironment.getElementsAnnotatedWith(Interceptor.class);
+        for (Element element:elements) {
+            if (!(element instanceof TypeElement)) {
+                continue;
+            }
+            Interceptor interceptor = element.getAnnotation(Interceptor.class);
+            createOrAppendInterceptor(interceptor, (TypeElement) element);
+        }
+
+        println(mInterceptorTypeSpecBuilder.toString());
+        JavaFile javaFile = JavaFile.builder(Constants.PACKAGE_COMPILE, mInterceptorTypeSpecBuilder.build())
+                .build();
+        try {
+            javaFile.writeTo(mProcessingEnvironment.getFiler());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     private void doRoute(RoundEnvironment roundEnvironment) {
@@ -117,8 +143,11 @@ public class RouteProcessor extends AbstractProcessor {
             }
 //            printTypeElement((TypeElement) element);
             Route route = element.getAnnotation(Route.class);
-            createOrAppendRouter(route, (TypeElement) element);
-            println("createOrAppend");
+            if (route != null) {
+                createOrAppendRouter(route, (TypeElement) element);
+                println("createOrAppend");
+                continue;
+            }
         }
         println("write...");
         Collection<TypeSpec.Builder> typeSpecs = mTypeMap.values();
@@ -132,6 +161,121 @@ public class RouteProcessor extends AbstractProcessor {
                 e.printStackTrace();
             }
         }
+    }
+
+    private TypeSpec.Builder createInterceptor(String className, Interceptor interceptor, TypeElement element) {
+        ClassName superInterface = ClassName.get(RouteUtils.getPackageName(IInterceptorInfo.class),
+                IInterceptorInfo.class.getSimpleName());
+        ClassName hashMapClassName = ClassName.get(RouteUtils.getPackageName(Map.class),
+                Map.class.getSimpleName());
+        printClassName(hashMapClassName);
+        ClassName stringClassName = ClassName.get(RouteUtils.getPackageName(String.class),
+                String.class.getSimpleName()
+        );
+        printClassName(stringClassName);
+        ClassName interceptorInfoClassName = ClassName.get(RouteUtils.getPackageName(InterceptorInfo.class),
+                InterceptorInfo.class.getSimpleName()
+        );
+        printClassName(interceptorInfoClassName);
+        ParameterizedTypeName parameterizedTypeName = ParameterizedTypeName.get(hashMapClassName,
+                stringClassName,
+                interceptorInfoClassName
+        );
+        ParameterSpec parameterSpec = ParameterSpec.builder(parameterizedTypeName, "map")
+                .build();
+        CodeBlock codeBlock = CodeBlock.builder()
+                .addStatement("map.put($S, new $N($N.class, $S, $L));",
+                        interceptor.name(),
+                        interceptorInfoClassName.simpleName(),
+                        element.toString(),
+                        interceptor.name(),
+                        interceptor.priority()
+                )
+                .build();
+        MethodSpec loadInfoMethodSpec = MethodSpec.methodBuilder("loadInfo")
+                .addModifiers(Modifier.PUBLIC)
+                .addParameter(parameterSpec)
+                .addCode(codeBlock)
+                .build();
+        return TypeSpec.classBuilder(className)
+                .addModifiers(Modifier.PUBLIC)
+                .addSuperinterface(superInterface)
+                .addMethod(loadInfoMethodSpec);
+    }
+
+    private TypeSpec.Builder createRouter(Route route, String className, TypeElement element) {
+        ClassName superInterface = ClassName.get(RouteUtils.getPackageName(IGroup.class),
+                IGroup.class.getSimpleName());
+        printClassName(superInterface);
+        ClassName hashMapClassName = ClassName.get(RouteUtils.getPackageName(Map.class),
+                Map.class.getSimpleName());
+        printClassName(hashMapClassName);
+        ClassName stringClassName = ClassName.get(RouteUtils.getPackageName(String.class),
+                String.class.getSimpleName()
+        );
+        printClassName(stringClassName);
+        ClassName componentInfoClassName = ClassName.get(RouteUtils.getPackageName(ComponentInfo.class),
+                ComponentInfo.class.getSimpleName()
+        );
+        printClassName(componentInfoClassName);
+        ParameterizedTypeName parameterizedTypeName = ParameterizedTypeName.get(hashMapClassName,
+                stringClassName,
+                componentInfoClassName
+        );
+        ParameterSpec parameterSpec = ParameterSpec.builder(parameterizedTypeName, "map")
+                .build();
+        CodeBlock codeBlock = CodeBlock.builder()
+                .addStatement("map.put($S, new $N($S, $N.class));",
+                        route.path(),
+                        componentInfoClassName.simpleName(),
+                        route.path(),
+                        element.toString()
+                )
+                .build();
+        println(codeBlock.toString());
+        MethodSpec loadInfoMethodSpec = MethodSpec.methodBuilder("loadInfo")
+                .addModifiers(Modifier.PUBLIC)
+                .addParameter(parameterSpec)
+                .addCode(codeBlock)
+                .build();
+        return TypeSpec.classBuilder(className)
+                .addModifiers(Modifier.PUBLIC)
+                .addSuperinterface(superInterface)
+                .addMethod(loadInfoMethodSpec);
+    }
+
+    /**
+     * create a java file or append content on it
+     *
+     * @param interceptor   interceptor
+     * @param element type element
+     */
+    private TypeSpec.Builder createOrAppendInterceptor(Interceptor interceptor, TypeElement element) {
+
+        if (mInterceptorTypeSpecBuilder == null) {
+            mInterceptorTypeSpecBuilder = createInterceptor(Constants.CLASS_INTERCEPTOR, interceptor, element);
+            println("interceptor create.");
+        } else {
+            println("interceptor exsit");
+            CodeBlock codeBlock = CodeBlock.builder()
+                    .addStatement("map.put($S, new $N($N.class, $S, $L));",
+                            interceptor.name(),
+                            InterceptorInfo.class.getSimpleName(),
+                            element.toString(),
+                            interceptor.name(),
+                            interceptor.priority()
+                    )
+                    .build();
+            println(mInterceptorTypeSpecBuilder.toString());
+            println(mInterceptorTypeSpecBuilder.methodSpecs.get(0).toString());
+            MethodSpec methodSpec = mInterceptorTypeSpecBuilder.methodSpecs.get(0).toBuilder().addCode(codeBlock).build();
+            println(methodSpec.toString());
+            mInterceptorTypeSpecBuilder.methodSpecs.clear();
+            TypeSpec typeSpec1 = mInterceptorTypeSpecBuilder.addMethod(methodSpec).build();
+            println("------");
+            println(typeSpec1.toString());
+        }
+        return mInterceptorTypeSpecBuilder;
     }
 
     /**
@@ -152,44 +296,7 @@ public class RouteProcessor extends AbstractProcessor {
         if (typeSpec == null) {
             String className = Constants.GROUP_PREFIX + group;
             println("group:" + group + ", class:" + className);
-            ClassName superInterface = ClassName.get(RouteUtils.getPackageName(IGroup.class),
-                    IGroup.class.getSimpleName());
-            printClassName(superInterface);
-            ClassName hashMapClassName = ClassName.get(RouteUtils.getPackageName(Map.class),
-                    Map.class.getSimpleName());
-            printClassName(hashMapClassName);
-            ClassName stringClassName = ClassName.get(RouteUtils.getPackageName(String.class),
-                    String.class.getSimpleName()
-            );
-            printClassName(stringClassName);
-            ClassName componentInfoClassName = ClassName.get(RouteUtils.getPackageName(ComponentInfo.class),
-                    ComponentInfo.class.getSimpleName()
-            );
-            printClassName(componentInfoClassName);
-            ParameterizedTypeName parameterizedTypeName = ParameterizedTypeName.get(hashMapClassName,
-                    stringClassName,
-                    componentInfoClassName
-            );
-            ParameterSpec parameterSpec = ParameterSpec.builder(parameterizedTypeName, "map")
-                    .build();
-            CodeBlock codeBlock = CodeBlock.builder()
-                    .addStatement("map.put($S, new $N($S, $N.class));",
-                            route.path(),
-                            componentInfoClassName.simpleName(),
-                            route.path(),
-                            element.toString()
-                    )
-                    .build();
-            println(codeBlock.toString());
-            MethodSpec loadInfoMethodSpec = MethodSpec.methodBuilder("loadInfo")
-                    .addModifiers(Modifier.PUBLIC)
-                    .addParameter(parameterSpec)
-                    .addCode(codeBlock)
-                    .build();
-            typeSpec = TypeSpec.classBuilder(className)
-                    .addModifiers(Modifier.PUBLIC)
-                    .addSuperinterface(superInterface)
-                    .addMethod(loadInfoMethodSpec);
+            typeSpec = createRouter(route, className, element);
             mTypeMap.put(group, typeSpec);
             println("map put...");
         } else {
@@ -404,6 +511,4 @@ public class RouteProcessor extends AbstractProcessor {
     private void println(String msg) {
         System.out.println(msg);
     }
-
-
 }
