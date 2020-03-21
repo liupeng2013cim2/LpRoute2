@@ -99,13 +99,13 @@ public class Navigator {
         ExecutorService executorService = Executors.newFixedThreadPool(interceptors.size());
         List<Future> futureList = new ArrayList(interceptors.size());
         for (final InterceptorInfo interceptor:interceptors.values()) {
-            Future<Boolean> future = (Future<Boolean>)executorService.submit(new FutureTask(new Callable() {
+            Future<Boolean> future = executorService.submit(new Callable<Boolean>() {
                 @Override
                 public Boolean call() throws Exception {
                     try {
                         Object obj = interceptor.className.newInstance();
                         if (obj instanceof InterceptProcessor) {
-                            return ((InterceptProcessor) obj).process(mComponentInfo, new InterceptCallback() {
+                            boolean result = ((InterceptProcessor) obj).process(mComponentInfo, new InterceptCallback() {
                                 @Override
                                 public void onSuccess() {
 
@@ -115,35 +115,36 @@ public class Navigator {
                                 public void onFail() {
                                 }
                             });
+                            return Boolean.valueOf(result);
                         }
                     } catch (IllegalAccessException e) {
-                        e.printStackTrace();
+//                        e.printStackTrace();
                     } catch (InstantiationException e) {
-                        e.printStackTrace();
+//                        e.printStackTrace();
                     }
                     return Boolean.FALSE;
                 }
-            }));
+            });
             futureList.add(future);
         }
-        executorService.shutdown();
-        boolean result = true;
+        boolean result = false;
         try {
             for (Future<Boolean> future : futureList) {
-                result &= future.get();
-                if (!result) {
+                if (future.get()) {
+                    result = true;
                     break;
                 }
             }
-            if (result) {
+            if (!result) {
                 callback.onSuccess();
             } else {
                 callback.onFail();
             }
         }catch (InterruptedException | ExecutionException e) {
             callback.onFail();
+        } finally {
+            executorService.shutdown();
         }
-
     }
 
     public interface NavigateCallback {

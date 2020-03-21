@@ -83,6 +83,7 @@ public class RouteManager {
             Enumeration<String> enumeration = dexFile.entries();
             String className = null;
             String groupPrefix = Constants.PACKAGE_COMPILE + "." + Constants.GROUP_PREFIX;
+            String interceptorHolder = Constants.PACKAGE_COMPILE + "." + Constants.CLASS_INTERCEPTOR;
             while (enumeration.hasMoreElements()) {
                 className = enumeration.nextElement();
                 Log.e(TAG, "className:" + className);
@@ -90,7 +91,7 @@ public class RouteManager {
                     if (className.startsWith(groupPrefix)) {
                         Log.e(TAG, "className group:" + className);
                         ((IGroup) (Class.forName(className).newInstance())).loadInfo(sComponentMap);
-                    } else if (className.equals(Constants.CLASS_INTERCEPTOR)) {
+                    } else if (className.equals(interceptorHolder)) {
                         ((IInterceptorInfo)(Class.forName(className).newInstance())).loadInfo(sInterceptorMap);
                     }
                 } catch (ClassNotFoundException e) {
