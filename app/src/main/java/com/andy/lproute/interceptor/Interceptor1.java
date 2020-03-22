@@ -19,7 +19,7 @@ public class Interceptor1 implements InterceptProcessor {
 
     @Override
     public boolean process(ComponentInfo componentInfo, InterceptCallback callback) {
-        if (componentInfo.getComponent().getSimpleName().contains("Test1")) {
+        if (componentInfo.getComponent().getSimpleName().contains("Test")) {
             Log.e(TAG, "success");
             callback.onSuccess();
             return true;

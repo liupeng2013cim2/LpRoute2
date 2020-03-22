@@ -6,7 +6,6 @@ import android.content.Intent;
 import android.text.TextUtils;
 import android.util.Log;
 
-import com.andy.lproute.annotation.Interceptor;
 import com.andy.lproute.bean.ComponentInfo;
 import com.andy.lproute.bean.InterceptorInfo;
 import com.andy.lproute.interfaces.InterceptCallback;
@@ -16,12 +15,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.FutureTask;
 
 /**
  * @ClassName: Navigator
@@ -55,19 +52,7 @@ public class Navigator {
 
         Map<String, InterceptorInfo> interceptors = RouteManager.getInstance().getInterceptors();
         if (interceptors != null && !interceptors.isEmpty()) {
-            intercept(interceptors, new InterceptCallback() {
-                @Override
-                public void onSuccess() {
-                    doSwitch();
-                }
-
-                @Override
-                public void onFail() {
-                    if (mCallback != null) {
-                        mCallback.onFail(new IllegalStateException("be intercepted by"));
-                    }
-                }
-            });
+            intercept(interceptors);
         } else {
             doSwitch();
         }
@@ -92,8 +77,8 @@ public class Navigator {
         mCallback = null;
     }
 
-    void intercept(Map<String, InterceptorInfo> interceptors, final InterceptCallback callback) {
-        if (callback == null || interceptors == null || interceptors.isEmpty()) {
+    void intercept(Map<String, InterceptorInfo> interceptors) {
+        if (interceptors == null || interceptors.isEmpty()) {
             return;
         }
         ExecutorService executorService = Executors.newFixedThreadPool(interceptors.size());
@@ -107,8 +92,8 @@ public class Navigator {
                         if (obj instanceof InterceptProcessor) {
                             boolean result = ((InterceptProcessor) obj).process(mComponentInfo, new InterceptCallback() {
                                 @Override
-                                public void onSuccess() {
-
+                                public void onSuccess(InterceptorInfo interceptor1) {
+                                    mCallback.onIntercepted(interceptor1);
                                 }
 
                                 @Override
@@ -117,9 +102,7 @@ public class Navigator {
                             });
                             return Boolean.valueOf(result);
                         }
-                    } catch (IllegalAccessException e) {
-//                        e.printStackTrace();
-                    } catch (InstantiationException e) {
+                    } catch (IllegalAccessException | InstantiationException e) {
 //                        e.printStackTrace();
                     }
                     return Boolean.FALSE;
@@ -136,12 +119,12 @@ public class Navigator {
                 }
             }
             if (!result) {
-                callback.onSuccess();
+                mCallback.onSuccess(mComponentInfo);
             } else {
-                callback.onFail();
+                mCallback.onFail(new IllegalStateException("be intercpted"));
             }
         }catch (InterruptedException | ExecutionException e) {
-            callback.onFail();
+            mCallback.onFail(e);
         } finally {
             executorService.shutdown();
         }
@@ -150,6 +133,7 @@ public class Navigator {
     public interface NavigateCallback {
         void onStart();
         void onSuccess(ComponentInfo componentInfo);
+        void onIntercepted(InterceptorInfo interceptor);
         void onFail(Throwable throwable);
         void onComplete();
     }
